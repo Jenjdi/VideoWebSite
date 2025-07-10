@@ -1,5 +1,5 @@
-#include"Util.hpp"
-#include"Data.hpp"
+
+#include"Server.hpp"
 void testfileutil()
 {
     aod::FileUtil("./www").CreateDirectory();
@@ -50,9 +50,15 @@ void testdatabase()
     std::cout<<body<<std::endl;
     
 }
+void testserver()
+{
+    aod::Server s(1234);
+    s.RunModule();
+}
 int main()
 {
     //testfileutil();
     //testjsonutil();
-    testdatabase();
+    //testdatabase();
+    testserver();
 }

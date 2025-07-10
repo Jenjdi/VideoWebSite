@@ -1,9 +1,9 @@
-
 #ifndef __MY_DATA__
 #define __MY_DATA__
 #include "Util.hpp"
 #include <mysql/mysql.h>
 #include <mutex>
+#include<string>
 namespace aod
 {
 #define HOST "localhost"
