@@ -1,9 +1,10 @@
 #ifndef __MY_DATA__
 #define __MY_DATA__
 #include "Util.hpp"
-#include <mysql/mysql.h>
+#include <cstdlib>
 #include <mutex>
-#include<string>
+#include <mysql/mysql.h>
+
 namespace aod
 {
 #define HOST "localhost"
@@ -11,47 +12,80 @@ namespace aod
 #define PASSWORD ""
 #define DATABASE "aod_system"
 
-#define SELECTALL_VIDEOS "select * from tb_video"
-#define SELECTONE_VIDEO "select * from tb_video where id=%d"
-#define INSERT_VIDEO "insert into tb_video values(null,'%s','%s','%s','%s')"
-#define DELETE_VIDEO "delete from tb_video where id=%d"
-#define UPDATE_VIDEO "update tb_video set name='%s',info='%s' where id=%d"
-#define SELECTLIKE_VIDEO "select * from tb_video where name like '%%%s%%'"
+    // #define SELECTALL_VIDEOS "select * from tb_video;"
+    // #define SELECTONE_VIDEO "select * from tb_video where id=%d;"
+    // #define INSERT_VIDEO "insert into tb_video values(null,'%s','%s','%s','%s');"
+    // #define DELETE_VIDEO "delete from tb_video where id=%d;"
+    // #define UPDATE_VIDEO "update tb_video set name='%s',info='%s' where id=%d;"
+    // #define SELECTLIKE_VIDEO "select * from tb_video where name like '%%%s%%';"
 
+    // static MYSQL *MysqlInit() {
+    // 	MYSQL *mysql = mysql_init(NULL);
+    // 	if (mysql == NULL) {
+    // 		std::cout << "init mysql instance failed!\n";
+    // 		return NULL;
+    // 	}
+    // 	if (mysql_real_connect(mysql, HOST, USER, PASSWORD, DATABASE, 0, NULL, 0) == NULL) {
+    // 		std::cout << "connect mysql server failed!\n";
+    // 		mysql_close(mysql);
+    // 		return NULL;
+    // 	}
+    // 	mysql_set_character_set(mysql, "utf8");
+    // 	return mysql;
+    // }
+    // static void MysqlDestroy(MYSQL *mysql)
+    // {
+    //     if (mysql != NULL)
+    //     {
+    //         mysql_close(mysql);
+    //     }
+    //     return;
+    // }
+    // static bool MysqlQuery(MYSQL *mysql, const std::string &sql) {
+    // 	int ret = mysql_query(mysql, sql.c_str());
+    // 	if (ret != 0) {
+    // 		std::cout << sql << std::endl;
+    // 		std::cout << mysql_error(mysql) << std::endl;
+    // 		return false;
+    // 	}
+    // 	return true;
+    // }
     static MYSQL *MysqlInit()
     {
-        MYSQL *mysql = mysql_init(nullptr);
-        if (mysql == nullptr)
+        MYSQL *mysql = mysql_init(NULL);
+        if (mysql == NULL)
         {
-            std::cout << "mysql init failed" << std::endl;
-            return nullptr;
+            std::cout << "init mysql instance failed!\n";
+            return NULL;
         }
-        if (mysql_real_connect(mysql, HOST, USER, PASSWORD, DATABASE, 0, nullptr, 0) == nullptr)
+        if (mysql_real_connect(mysql, HOST, USER, PASSWORD, DATABASE, 0, NULL, 0) == NULL)
         {
-            std::cout << "connect failed" << std::endl;
-            return nullptr;
+            std::cout << "connect mysql server failed!\n";
+            mysql_close(mysql);
+            return NULL;
         }
         mysql_set_character_set(mysql, "utf8");
         return mysql;
     }
     static void MysqlDestroy(MYSQL *mysql)
     {
-        if (mysql != nullptr)
+        if (mysql != NULL)
         {
             mysql_close(mysql);
         }
+        return;
     }
     static bool MysqlQuery(MYSQL *mysql, const std::string &sql)
     {
         int ret = mysql_query(mysql, sql.c_str());
         if (ret != 0)
         {
-            std::cout << "query failed" << std::endl;
+            std::cout << sql << std::endl;
+            std::cout << mysql_error(mysql) << std::endl;
             return false;
         }
         return true;
     }
-
     class TableVideo
     {
     private:
@@ -59,10 +93,22 @@ namespace aod
         std::mutex _mutex;
 
     public:
+        // TableVideo()
+        // {
+        //     _mysql = MysqlInit();
+        //     if (_mysql == NULL)
+        //     {
+        //         exit(-1);
+        //     }
+        // }
+        // ~TableVideo()
+        // {
+        //     MysqlDestroy(_mysql);
+        // }
         TableVideo()
         {
             _mysql = MysqlInit();
-            if (_mysql == nullptr)
+            if (_mysql == NULL)
             {
                 exit(-1);
             }
@@ -74,61 +120,87 @@ namespace aod
         // bool Insert(const Json::Value &video)
         // {
         //     std::string sql;
-        //     sql.resize(4096 + video["info"].asString().size()); // 防止简介过长
+        //     sql.resize(4096 + video["info"].asString().size());
+        //     if (video["name"].asString().size() == 0) {
+        // 			return false;
+        // 		}
         //     sprintf(&sql[0], INSERT_VIDEO,
-        //             video["name"].asString().c_str(),
-        //             video["info"].asString().c_str(),
-        //             video["video"].asString().c_str(),
-        //             video["image"].asString().c_str());
+        //             video["name"].asCString(),
+        //             video["info"].asCString(),
+        //             video["video"].asCString(),
+        //             video["image"].asCString());
         //     return MysqlQuery(_mysql, sql);
         // }
         bool Insert(const Json::Value &video)
         {
+            // id name info video image
             std::string sql;
-            sql.resize(4096 + video["info"].asString().size());
-            sprintf(&sql[0], INSERT_VIDEO,
-                    video["name"].asString().c_str(),
-                    video["info"].asString().c_str(),
-                    video["video"].asString().c_str(),
-                    video["image"].asString().c_str());
+            sql.resize(4096 + video["info"].asString().size()); // 防止简介过长
+#define INSERT_VIDEO "insert tb_video values(null, '%s', '%s', '%s', '%s');"
+            if (video["name"].asString().size() == 0)
+            {
+                return false;
+            }
+            // 要完成的细致的话需要对各个数据进行校验，因为不校验直接用就有可能出问题
+            sprintf(&sql[0], INSERT_VIDEO, video["name"].asCString(),
+                    video["info"].asCString(),
+                    video["video"].asCString(),
+                    video["image"].asCString());
             return MysqlQuery(_mysql, sql);
         }
-
+        // bool Delete(int video_id)
+        // {
+        //     char sql[1024] = {0};
+        //     sprintf(sql, DELETE_VIDEO, video_id);
+        //     return MysqlQuery(_mysql, sql);
+        // }
         bool Delete(int video_id)
         {
+#define DELETE_VIDEO "delete from tb_video where id=%d;"
             char sql[1024] = {0};
             sprintf(sql, DELETE_VIDEO, video_id);
             return MysqlQuery(_mysql, sql);
         }
+        // bool Update(int video_id, const Json::Value &video)
+        // {
+        //     std::string sql;
+        //     sql.resize(4096 + video["info"].asString().size()); // 防止简介过长
+        //     sprintf(&sql[0], UPDATE_VIDEO,
+        //             video["name"].asString().c_str(),
+        //             video["info"].asString().c_str(), video_id);
+        //     return MysqlQuery(_mysql, sql);
+        // }
         bool Update(int video_id, const Json::Value &video)
         {
             std::string sql;
             sql.resize(4096 + video["info"].asString().size()); // 防止简介过长
-            sprintf(&sql[0], UPDATE_VIDEO, video["name"].asString().c_str(),
-                    video["info"].asString().c_str(), video_id);
+#define UPDATE_VIDEO "update tb_video set name='%s', info='%s' where id=%d;"
+            sprintf(&sql[0], UPDATE_VIDEO, video["name"].asCString(),
+                    video["info"].asCString(), video_id);
             return MysqlQuery(_mysql, sql);
         }
         bool SelectLike(const std::string &key, Json::Value *videos)
         {
-            _mutex.lock();
+#define SELECTLIKE_VIDEO "select * from tb_video where name like '%%%s%%';"
             char sql[1024] = {0};
             sprintf(sql, SELECTLIKE_VIDEO, key.c_str());
-            if (!MysqlQuery(_mysql, sql))
+            _mutex.lock(); //-----lock start 保护查询与保存结果到本地的过程
+            bool ret = MysqlQuery(_mysql, sql);
+            if (ret == false)
             {
-                std::cout << "select like failed" << std::endl;
                 _mutex.unlock();
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(_mysql);
-            if (res == nullptr)
+            if (res == NULL)
             {
-                std::cout << "get res failed" << std::endl;
+                std::cout << "mysql store result failed!\n";
                 _mutex.unlock();
                 return false;
             }
-            int row_num = mysql_num_rows(res);
-
-            for (int i = 0; i < row_num; i++)
+            _mutex.unlock(); //------lock end
+            int num_rows = mysql_num_rows(res);
+            for (int i = 0; i < num_rows; i++)
             {
                 MYSQL_ROW row = mysql_fetch_row(res);
                 Json::Value video;
@@ -140,30 +212,28 @@ namespace aod
                 videos->append(video);
             }
             mysql_free_result(res);
-            _mutex.unlock();
             return true;
         }
         bool SelectAll(Json::Value *videos)
         {
-            _mutex.lock(); // 因为需要将结果保存到本地，因此需要加锁保护
-            
-            if (!MysqlQuery(_mysql, SELECTALL_VIDEOS))
+#define SELECTALL_VIDEO "select * from tb_video;"
+            _mutex.lock(); //-----lock start 保护查询与保存结果到本地的过程
+            bool ret = MysqlQuery(_mysql, SELECTALL_VIDEO);
+            if (ret == false)
             {
-                std::cout << "select all failed" << std::endl;
                 _mutex.unlock();
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(_mysql);
-            if (res == nullptr)
+            if (res == NULL)
             {
-                std::cout << "get res failed" << std::endl;
+                std::cout << "mysql store result failed!\n";
                 _mutex.unlock();
                 return false;
             }
-            videos->clear();
-            //*videos = Json::Value(Json::arrayValue);
-            int row_num = mysql_num_rows(res);
-            for (int i = 0; i < row_num; i++)
+            _mutex.unlock(); //------lock end
+            int num_rows = mysql_num_rows(res);
+            for (int i = 0; i < num_rows; i++)
             {
                 MYSQL_ROW row = mysql_fetch_row(res);
                 Json::Value video;
@@ -175,44 +245,44 @@ namespace aod
                 videos->append(video);
             }
             mysql_free_result(res);
-            _mutex.unlock();
             return true;
         }
         bool SelectOne(int video_id, Json::Value *video)
         {
-            _mutex.lock();
+#define SELECTONE_VIDEO "select * from tb_video where id=%d;"
             char sql[1024] = {0};
             sprintf(sql, SELECTONE_VIDEO, video_id);
-            if (!MysqlQuery(_mysql, sql))
+            _mutex.lock(); //-----lock start 保护查询与保存结果到本地的过程
+            bool ret = MysqlQuery(_mysql, sql);
+            if (ret == false)
             {
-                std::cout << "select one failed" << std::endl;
                 _mutex.unlock();
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(_mysql);
-            if (res == nullptr)
+            if (res == NULL)
             {
-                std::cout << "get res failed" << std::endl;
+                std::cout << "mysql store result failed!\n";
                 _mutex.unlock();
                 return false;
             }
-            int row_num = mysql_num_rows(res);
-            if (row_num != 1)
+            _mutex.unlock(); //------lock end
+            int num_rows = mysql_num_rows(res);
+            if (num_rows != 1)
             {
-                std::cout << "get row failed" << std::endl;
+                std::cout << "have no data!\n";
                 mysql_free_result(res);
-                _mutex.unlock();
                 return false;
             }
             MYSQL_ROW row = mysql_fetch_row(res);
-            (*video)["id"] = atoi(row[0]);
+            (*video)["id"] = video_id;
             (*video)["name"] = row[1];
             (*video)["info"] = row[2];
-            (*video)["image"] = row[3];
-            _mutex.unlock();
+            (*video)["video"] = row[3];
+            (*video)["image"] = row[4];
+            mysql_free_result(res);
             return true;
         }
-        
     };
 }
 
